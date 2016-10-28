@@ -71,7 +71,7 @@ class PleskApiClient
 
         curl_close($curl);
 
-        return $result;
+        return $this->_handlingResponse($result);
     }
 
     /**
@@ -94,6 +94,34 @@ class PleskApiClient
         }
 
         return $headers;
+    }
+
+    /**
+     * Handling API response
+     *
+     * @param string $response
+     * @return array
+     */
+    private function _handlingResponse($response)
+    {
+      $xml = simplexml_load_string($response);
+      $json = json_encode($xml);
+      $response = json_decode($json,TRUE);
+      $status = array_search('status', $response);
+      if ($status == 'ok')
+      {
+        return $response;
+      }
+      elseif($status == 'error')
+      {
+        $error_code = array_search('errcode', $response);
+        $error = array_search('errtext', $response);
+        throw new \Exception($error_code.':'.$error);
+      }
+      elseif(is_null($status))
+      {
+        throw new \Exception("No output from Plesk XML-RPC API.");
+      }
     }
 
 }
